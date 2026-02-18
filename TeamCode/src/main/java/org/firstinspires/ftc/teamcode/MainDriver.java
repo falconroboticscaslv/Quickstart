@@ -4,51 +4,36 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.hardware.limelightvision.LLResult;
-import com.qualcomm.robotcore.hardware.IMU;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
-import org.firstinspires.ftc.robotcore.external.JavaUtil;
-import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
-import org.firstinspires.ftc.robotcore.external.navigation.AngularVelocity;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+
+import org.firstinspires.ftc.teamcode.mechanisms.MecanumDrive;
 
 @TeleOp(name = "MainDriver")
 public class MainDriver extends LinearOpMode {
+    MecanumDrive drive = new MecanumDrive();
 
-    private DcMotor backRight;
-    private DcMotor backLeft;
-    private DcMotor frontLeft;
-    private DcMotor frontRight;
+    double forward, strafe, rotate;
     private DcMotor intake;
     private DcMotor outtake;
     private Limelight3A limelight;
     private Servo servo;
     private Servo servo2;
-    private Servo servo3;
     private Servo outtakeServo;
-
-
 
     @Override
     public void runOpMode() {
 
         // Get hardware
-        backRight = hardwareMap.get(DcMotor.class, "backRight");
-        backLeft = hardwareMap.get(DcMotor.class, "backLeft");
-        frontLeft = hardwareMap.get(DcMotor.class, "frontLeft");
-        frontRight = hardwareMap.get(DcMotor.class, "frontRight");
+        drive.init(hardwareMap);
 
         servo = hardwareMap.get(Servo.class, "servo");
         servo2 = hardwareMap.get(Servo.class, "servo2");
-        servo3 = hardwareMap.get(Servo.class, "servo3");
         outtakeServo = hardwareMap.get(Servo.class,"outtakeServo");
 
         DcMotorEx intake = hardwareMap.get(DcMotorEx.class, "intake");
@@ -58,38 +43,21 @@ public class MainDriver extends LinearOpMode {
         limelight.start();
         limelight.pipelineSwitch(0); //apriltags 20, 24 (goal tags)
 
-        // Set motor directions
-        frontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
-        backLeft.setDirection(DcMotorSimple.Direction.REVERSE);
-        frontRight.setDirection(DcMotorSimple.Direction.FORWARD);
-        backRight.setDirection(DcMotorSimple.Direction.FORWARD);
-
         // Main Loop
         waitForStart();
         if (opModeIsActive()) {
-
-            //Set Variables
-            double flp = 0;
-            double frp = 0;
-            double blp = 0;
-            double brp = 0;
-
             double speed = 1;
             double turn = 0.9;
 
             double tx = 0;
-
-            double forward, strafe, rotate;
-
-            int pipeline = 0;
+            double ta = 0;
 
             boolean rotateOn = false;
 
-            //double distance;
+            double distance = 0;
 
             servo.setPosition(0);
             servo2.setPosition(0.365);
-            servo3.setPosition(0.5);
             outtakeServo.setPosition(0.86);
 
 
@@ -145,6 +113,7 @@ public class MainDriver extends LinearOpMode {
                     outtakeOn = !outtakeOn;
                 }
 
+                //Outtake counter
                 if (gamepad1.dpadUpWasPressed()) {
                     if (outtakeMax < 2) {
                         outtakeMax = outtakeMax+1;
@@ -161,22 +130,7 @@ public class MainDriver extends LinearOpMode {
                     }
                 }
 
-                if (gamepad1.dpadRightWasPressed()) {
-                    if (intakeMax < 2) {
-                        intakeMax = intakeMax+1;
-                    } else {
-                        intakeMax = 0;
-                    }
-                }
-
-                if (gamepad1.dpadLeftWasPressed()) {
-                    if (intakeMax > 0) {
-                        intakeMax = outtakeMax-1;
-                    } else {
-                        intakeMax = 2;
-                    }
-                }
-
+                //Outtake velocity changing
                 if (outtakeOn) {
                     if (outtakeMax < 1) {
                         outtake.setVelocity(1500);
@@ -190,11 +144,28 @@ public class MainDriver extends LinearOpMode {
                     outtake.setPower(0);
                 }
 
-                // Intake Toggle
+                //Intake toggle
+                if (gamepad1.dpadRightWasPressed()) {
+                    if (intakeMax < 2) {
+                        intakeMax = intakeMax+1;
+                    } else {
+                        intakeMax = 0;
+                    }
+                }
+
+                //Intake counter
+                if (gamepad1.dpadLeftWasPressed()) {
+                    if (intakeMax > 0) {
+                        intakeMax = outtakeMax-1;
+                    } else {
+                        intakeMax = 2;
+                    }
+                }
                 if (gamepad1.aWasPressed()){
                     intakeOn = !intakeOn;
                 }
 
+                //Intake velocity changing
                 if (intakeOn) {
                     if (intakeMax < 1) {
                         intake.setVelocity(700);
@@ -210,37 +181,20 @@ public class MainDriver extends LinearOpMode {
 
                 //-----------------Limelight stuff-------------
                 LLResult llResult = limelight.getLatestResult();
-                tx = llResult.getTx();
+
                 if (llResult != null && llResult.isValid()) {
+                    tx = llResult.getTx();
+                    ta = llResult.getTa();
+                    distance = 0.4528733+(72.94012-0.4528733)/(1+Math.pow((ta/3.113176),1.254381));
+
                     telemetry.addData("Target X", tx);
-                    telemetry.addData("Target Area", llResult.getTx());
+                    telemetry.addData("Target Area", ta);
+                    telemetry.addData("Distance", distance);
                 }
                 telemetry.addData("Auto-Rotate", rotateOn);
-                telemetry.addData("Pipeline", pipeline);
                 telemetry.addData("Outtake velocity counter", outtakeMax);
                 telemetry.addData("Intake velocity counter", intakeMax);
                 telemetry.update();
-
-                if (rotateOn) {
-                    if (pipeline < 1) {
-                        servo3.setPosition(0.5);
-                    } else {
-                        servo3.setPosition(0.365);
-                    }
-                } else {
-                    servo3.setPosition(0.4);
-                }
-                //---------------Pipeline switching--------------
-                if (gamepad2.rightBumperWasPressed()) {
-                    if (pipeline < 1) {
-                        pipeline = 1;
-                        servo3.setPosition(0.365);
-                    } else {
-                        pipeline = 0;
-                        servo3.setPosition(0.5);
-                    }
-                }
-                limelight.pipelineSwitch(pipeline);
 
                 //------------------Auto-Align----------------------
 
@@ -258,30 +212,6 @@ public class MainDriver extends LinearOpMode {
                 forward = -gamepad2.left_stick_y * speed;
                 strafe = gamepad2.left_stick_x * speed;
                 rotate = gamepad2.right_stick_x * turn + (tx*0.022);
-
-                double denominator = Math.max(Math.abs(forward) + Math.abs(strafe) + Math.abs(rotate), 1);
-
-                flp /= denominator;
-                frp /= denominator;
-                blp /= denominator;
-                brp /= denominator;
-
-                flp = forward + strafe + rotate;
-                frp = forward - strafe - rotate;
-                blp = forward - strafe + rotate;
-                brp = forward + strafe - rotate;
-
-                // Set motor powers
-                frontLeft.setPower(flp);
-                frontRight.setPower(frp);
-                backLeft.setPower(blp);
-                backRight.setPower(brp);
-
-                //Reset powers
-                flp = 0;
-                frp = 0;
-                blp = 0;
-                blp = 0;
             }
         }
     }
