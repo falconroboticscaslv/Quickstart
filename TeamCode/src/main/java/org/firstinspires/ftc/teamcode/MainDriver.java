@@ -106,7 +106,7 @@ public class MainDriver extends LinearOpMode {
                     servo.setPosition(0);
                     servo2.setPosition(0.365);
                 }
-                //test
+
                 // Outtake Toggle
                 if (gamepad1.yWasPressed()) {
                     outtakeOn = !outtakeOn;
