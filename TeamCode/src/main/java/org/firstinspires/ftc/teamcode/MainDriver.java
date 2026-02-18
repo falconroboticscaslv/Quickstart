@@ -60,7 +60,6 @@ public class MainDriver extends LinearOpMode {
             servo2.setPosition(0.365);
             outtakeServo.setPosition(0.86);
 
-
             boolean intakeOn = false;
             boolean outtakeOn = false;
             boolean servoOn = false;
