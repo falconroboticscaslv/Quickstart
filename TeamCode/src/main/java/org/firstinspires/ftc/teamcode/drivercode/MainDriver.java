@@ -1,7 +1,7 @@
 //Main Driver code for FTC Team 19810
 
 // Import packages
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.drivercode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
