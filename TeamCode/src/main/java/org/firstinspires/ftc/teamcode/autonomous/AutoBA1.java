@@ -69,6 +69,7 @@ public class AutoBA1 extends OpMode {
             case 3:
                 if(!follower.isBusy()) {
                     follower.followPath(returnStartPos,true);
+                    setPathState(4);
                 }
                 break;
         }
